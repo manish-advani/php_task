@@ -1,45 +1,45 @@
 <?php
-
-unset($argv[0]);
-
-$FilePath = $argv[1];
-$ColIndex = $argv[2];
-$SearchTerm = $argv[3];
-
-
-if (($open = fopen($FilePath, "r")) !== FALSE)
-{
-    while (($data = fgetcsv($open, 1000, ",")) !== FALSE)
-    {
-	
-       $array[] = $data;
-
+// Function to read a CSV file
+function readCSV($csvFile) {
+    $fileHandle = fopen($csvFile, 'r');
+    $csvData = array();
+    while (($row = fgetcsv($fileHandle, 0, ",")) !== FALSE) {
+        $csvData[] = $row;
     }
-
-    fclose($open);
-
-    foreach($array as $Key => $Row)
-    {
-    	$Result = array();
-    	$Result[] = $Row;
-
-    	if($Row[$ColIndex] == $SearchTerm)
-    	{
-    		$isExist = true;
-    		break;
-    	}
-    	else
-    	{
-    		$isExist = false;
-    	}
-    }
-    if($isExist)
-    	echo implode($Result[0], ',');
-    else 
-    	echo "Record not found!";
+    fclose($fileHandle);
+    return $csvData;
 }
-else
-echo "Make sure you enter the correct file name / file is not empty!";
 
+// Function to search in a CSV file
+function searchCSV($csvFile, $columnNumber, $searchKey) {
+    $csvData = readCSV($csvFile);
+    $matchingRows = array();
+    foreach ($csvData as $row) {
+        if ($row[$columnNumber-1] == $searchKey) {
+            $matchingRows[] = $row;
+        }
+    }
+    return $matchingRows;
+}
 
-?> 
+// Handle form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $csvFile = $_FILES["csv_file"]["tmp_name"];
+    $columnNumber = $_POST["column_number"];
+    $searchKey = $_POST["search_key"];
+
+    $result = searchCSV($csvFile, $columnNumber, $searchKey);
+
+    // Display result
+    if ($result) {
+        $resultHtml = "<h2>Matching rows:</h2><ul>";
+        foreach ($result as $row) {
+            $resultHtml .= "<li>" . implode(", ", $row) . "</li>";
+        }
+        $resultHtml .= "</ul>";
+        header("Location: index.html?result=" . urlencode($resultHtml));
+    } else {
+        header("Location: index.html?result=No matching rows found.");
+    }
+}
+?>
